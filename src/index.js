@@ -18,7 +18,11 @@ import './index.css';
 //関数コンポーネント
 function Square(props) {
     return (
-        <button className="square" onClick={props.onClick}>
+        <button className={
+            props.isHighlight ? 'square highlight-color' : 'square'
+        }
+                onClick={props.onClick}
+        >
             {props.value}
         </button>
     );
@@ -41,30 +45,28 @@ class Board extends React.Component {
         return <Square
             value={this.props.squares[i]}
             onClick={() => this.props.onClick(i)}
+            isHighlight={this.props.winLine.includes(i)}
+            key={i}
         />;
     }
 
     render() {
 
-        return (
-            <div>
-                <div className="board-row">
-                    {this.renderSquare(0)}
-                    {this.renderSquare(1)}
-                    {this.renderSquare(2)}
-                </div>
-                <div className="board-row">
-                    {this.renderSquare(3)}
-                    {this.renderSquare(4)}
-                    {this.renderSquare(5)}
-                </div>
-                <div className="board-row">
-                    {this.renderSquare(6)}
-                    {this.renderSquare(7)}
-                    {this.renderSquare(8)}
-                </div>
-            </div>
-        );
+        const sq = 3;
+
+        let div_list = [];
+
+        for (let c = 0; c < Math.pow(sq, 2); c += sq) {
+            let row = [];
+            for (let r = 0; r < sq; r++) {
+                row.push(this.renderSquare(c + r));
+            }
+            div_list.push(<div className="board-row" key={c}>{row}</div>);
+        }
+        ;
+
+        return (<div>{div_list}</div>)
+
     }
 }
 
@@ -77,11 +79,12 @@ class Game extends React.Component {
             }],
             stepNumber: 0,
             xIsNext: true,
+            isAsc: false,
         };
     }
 
     handleClick(i) {
-        const history = this.state.history.slice(0,this.state.stepNumber + 1);
+        const history = this.state.history.slice(0, this.state.stepNumber + 1);
         const current = history[history.length - 1];
 
         // squareのコピーを取得
@@ -93,6 +96,8 @@ class Game extends React.Component {
         this.setState({
             history: history.concat([{
                 squares: squares,
+                col: (i % 3) + 1,
+                row: Math.floor(i / 3) + 1,
             }]),
             stepNumber: history.length,
             xIsNext: !this.state.xIsNext,
@@ -106,27 +111,43 @@ class Game extends React.Component {
         })
     }
 
+    handleOrder() {
+        this.setState({
+            isAsc: !this.state.isAsc,
+        })
+    }
+
 
     render() {
         const history = this.state.history;
         const current = history[this.state.stepNumber];
-        const winner = calculateWinner(current.squares);
+        const winnerInfo = calculateWinner(current.squares);
 
         const moves = history.map((step, move) => {
-            const desc = move ? 'Go to move #' + move : 'Go to game start';
+            const desc = move ?
+                'Go to move #' + move + ' ( cols: ' + step.col + ' row: ' + step.row + ' ) ' :
+                'Go to game start';
             return (
                 <li key={move}>
-                    <button onClick={() => this.jumpTo(move)}>{desc}</button>
+                    <button onClick={() => this.jumpTo(move)}>
+                        {move === this.state.stepNumber ? <strong>{desc}</strong> : desc}
+                    </button>
                 </li>
             )
         });
 
         let status;
-        if (winner) {
-            status = 'Winner: ' + winner;
-        } else {
+        let winLine = [];
+        if (!winnerInfo) {
             status = 'Next player: ' + (this.state.xIsNext ? 'X' : 'O');
+        } else if (winnerInfo === 'draw') {
+            status = 'Draw';
+        } else {
+            status = 'Winner: ' + winnerInfo.player;
+            winLine = winnerInfo.line;
         }
+
+        const orderButton = this.state.isAsc ? 'ASC' : 'DESC';
 
         return (
             <div className="game">
@@ -134,11 +155,17 @@ class Game extends React.Component {
                     <Board
                         squares={current.squares}
                         onClick={(i) => this.handleClick(i)}
+                        winLine={winLine}
                     />
                 </div>
                 <div className="game-info">
-                    <div>{ status }</div>
-                    <ol>{moves}</ol>
+                    <div>{status}</div>
+                    <div>
+                        <button onClick={() => this.handleOrder()}>{orderButton}</button>
+                    </div>
+                    <ol>
+                        {this.state.isAsc ? moves : moves.reverse()}
+                    </ol>
                 </div>
             </div>
         );
@@ -166,7 +193,10 @@ function calculateWinner(squares) {
     for (let i = 0; i < lines.length; i++) {
         const [a, b, c] = lines[i];
         if (squares[a] && squares[a] === squares[b] && squares[a] === squares[c]) {
-            return squares[a];
+            return {player: squares[a], line: [a, b, c]};
+        }
+        if (!squares.includes(null)) {
+            return 'draw';
         }
     }
     return null;
