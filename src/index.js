@@ -2,7 +2,20 @@ import React from 'react';
 import ReactDOM from 'react-dom';
 import './index.css';
 
+// class Square extends React.Component {
+//
+//     render() {
+//         return (
+//             // stateをセットする
+//             <button className="square" onClick={() => this.props.onClick()}>
+//                 {/*　valueを表示 */}
+//                 {this.props.value}
+//             </button>
+//         );
+//     }
+// }
 
+//関数コンポーネント
 function Square(props) {
     return (
         <button className="square" onClick={props.onClick}>
@@ -14,12 +27,23 @@ function Square(props) {
 class Board extends React.Component {
     constructor(props) {
         super(props);
+        // state->squaresにnull配列をセット
         this.state = {
             squares: Array(9).fill(null),
             xIsNext: true,
-        };
+        }
     }
+    // Squareコンポーネントに値を渡す
+    renderSquare(i) {
+            {/* マス目がクリックされた場合Squareから呼び出される*/}
+        return <Square
+            value={this.state.squares[i]}
+            onClick={() => this.handleClick(i)}
+        />;
+    }
+
     handleClick(i) {
+        // squareのコピーを取得
         const squares = this.state.squares.slice();
         if (calculateWinner(squares) || squares[i]) {
             return;
@@ -29,14 +53,6 @@ class Board extends React.Component {
             squares: squares,
             xIsNext: !this.state.xIsNext,
         });
-    }
-
-    renderSquare(i) {
-        return (
-            <Square
-                value={this.state.squares[i]}
-                onClick={() => this.handleClick(i)}/>
-        );
     }
 
     render() {
@@ -76,7 +92,7 @@ class Game extends React.Component {
         return (
             <div className="game">
                 <div className="game-board">
-                    <Board/>
+                    <Board />
                 </div>
                 <div className="game-info">
                     <div>{/* status */}</div>
@@ -90,7 +106,7 @@ class Game extends React.Component {
 // ========================================
 
 ReactDOM.render(
-    <Game/>,
+    <Game />,
     document.getElementById('root')
 );
 
